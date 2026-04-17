@@ -30,15 +30,24 @@
 
     <header>
       <h1>Control de Gastos</h1>
-      <div class="header-actions">
+      <div class="header-right">
+        <!-- Solo visible en móvil -->
+        <img id="usuario-foto-movil" src="" alt="" class="usuario-foto-movil hidden">
+        <button id="btn-nuevo-periodo-movil" class="btn-primary btn-movil-periodo">+ Período</button>
+        <button id="btn-menu-hamburguesa" class="btn-hamburguesa" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <!-- Acciones: desktop siempre visible, móvil desplegable -->
+      <div class="header-actions" id="header-actions">
         <div class="usuario-info">
           <img id="usuario-foto" src="" alt="" class="hidden">
           <span id="usuario-nombre"></span>
         </div>
-        <button id="btn-limpiar" class="btn-danger">Reiniciar</button>
-        <button id="btn-columnas" class="btn-secondary">⚙ Columnas</button>
         <span id="btn-guardado" class="btn-guardado">✓ Guardado</span>
+        <button id="btn-columnas" class="btn-secondary">⚙ Mis Cuentas</button>
         <button id="btn-nuevo-periodo" class="btn-primary">+ Nuevo Período</button>
+        <button id="btn-limpiar" class="btn-danger">Reiniciar</button>
         <button id="btn-logout" class="btn-logout">Salir</button>
       </div>
     </header>
@@ -47,7 +56,7 @@
     <div id="modal-overlay" class="modal-overlay hidden">
       <div class="modal">
         <div class="modal-header">
-          <h2>Gestionar Columnas</h2>
+          <h2>Mis Cuentas</h2>
           <button id="modal-cerrar" class="modal-close">✕</button>
         </div>
 
@@ -60,16 +69,21 @@
             <h3>Créditos (CR)</h3>
             <ul id="lista-cr" class="lista-columnas"></ul>
           </div>
+          <div class="col-seccion">
+            <h3>Otras Deudas (OD)</h3>
+            <ul id="lista-od" class="lista-columnas"></ul>
+          </div>
 
           <div class="col-seccion col-agregar">
-            <h3>Agregar nueva columna</h3>
+            <h3>Agregar nueva cuenta</h3>
             <div class="form-agregar">
-              <input id="nueva-nombre" type="text" placeholder="Nombre (ej: Visa Gold)" maxlength="20">
+              <input id="nueva-nombre" type="text" placeholder="Nombre (ej: Visa Gold, Banco X...)" maxlength="20">
               <select id="nueva-tipo">
                 <option value="TC">Tarjeta de Crédito (TC)</option>
                 <option value="CR">Crédito (CR)</option>
+                <option value="OD">Otras Deudas (OD)</option>
               </select>
-              <button id="btn-agregar-col" class="btn-primary">Agregar</button>
+              <button id="btn-agregar-col" class="btn-primary">+ Agregar</button>
             </div>
           </div>
         </div>

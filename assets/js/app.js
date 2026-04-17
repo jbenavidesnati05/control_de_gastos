@@ -114,9 +114,11 @@ function sumaTotal(idx, tipo, campo) {
 function actualizarTotalesFila(pId, idx, prefijo, campo) {
   const tc = sumaTotal(idx, 'TC', campo);
   const cr = sumaTotal(idx, 'CR', campo);
+  const od = sumaTotal(idx, 'OD', campo);
   fijarCelda(`${prefijo}TC_${pId}`, tc);
   fijarCelda(`${prefijo}CR_${pId}`, cr);
-  fijarCelda(`${prefijo}T_${pId}`,  tc + cr);
+  fijarCelda(`${prefijo}OD_${pId}`, od);
+  fijarCelda(`${prefijo}T_${pId}`,  tc + cr + od);
 }
 
 function actualizarGastosNextPeriodo(idx) {
@@ -191,7 +193,7 @@ function mkInput(valor, onCambio) {
   return input;
 }
 
-function agregarTotales(tr, pId, prefijo, tc, cr) {
+function agregarTotales(tr, pId, prefijo, tc, cr, od) {
   const tdTC = mkTd('col-total col-tc');
   tdTC.id    = `${prefijo}TC_${pId}`;
   tdTC.textContent = formatCOP(tc);
@@ -200,12 +202,17 @@ function agregarTotales(tr, pId, prefijo, tc, cr) {
   tdCR.id    = `${prefijo}CR_${pId}`;
   tdCR.textContent = formatCOP(cr);
 
+  const tdOD = mkTd('col-total col-od');
+  tdOD.id    = `${prefijo}OD_${pId}`;
+  tdOD.textContent = formatCOP(od);
+
   const tdT  = mkTd('col-total col-gen');
   tdT.id     = `${prefijo}T_${pId}`;
-  tdT.textContent = formatCOP(tc + cr);
+  tdT.textContent = formatCOP(tc + cr + od);
 
   tr.appendChild(tdTC);
   tr.appendChild(tdCR);
+  tr.appendChild(tdOD);
   tr.appendChild(tdT);
 }
 
@@ -236,7 +243,7 @@ function renderPeriodoInicial(p, idx, tbody) {
     tr.appendChild(td);
   });
 
-  agregarTotales(tr, p.id, 'si', sumaTotal(idx, 'TC', 'saldo'), sumaTotal(idx, 'CR', 'saldo'));
+  agregarTotales(tr, p.id, 'si', sumaTotal(idx, 'TC', 'saldo'), sumaTotal(idx, 'CR', 'saldo'), sumaTotal(idx, 'OD', 'saldo'));
   tbody.appendChild(tr);
 }
 
@@ -285,7 +292,8 @@ function renderPeriodoNormal(p, idx, tbody) {
 
     agregarTotales(tr, p.id, fila.prefijo,
       sumaTotal(idx, 'TC', fila.key),
-      sumaTotal(idx, 'CR', fila.key));
+      sumaTotal(idx, 'CR', fila.key),
+      sumaTotal(idx, 'OD', fila.key));
 
     tbody.appendChild(tr);
   });
@@ -298,7 +306,7 @@ function renderPeriodo(p, idx) {
     const trInd = document.createElement('tr');
     trInd.className = 'fila-indicador';
     const td = document.createElement('td');
-    td.colSpan = state.tarjetas.length + 5;
+    td.colSpan = state.tarjetas.length + 6;
     td.innerHTML = '<span class="badge-activo">● Período activo</span>';
     trInd.appendChild(td);
     tbody.appendChild(trInd);
@@ -310,20 +318,148 @@ function renderPeriodo(p, idx) {
   const trSep = document.createElement('tr');
   trSep.className = 'fila-separador';
   const tdSep = document.createElement('td');
-  tdSep.colSpan = state.tarjetas.length + 5;
+  tdSep.colSpan = state.tarjetas.length + 6;
   trSep.appendChild(tdSep);
   tbody.appendChild(trSep);
+}
+
+// ── (reservado) ──────────────────────────────────────────────────────────────
+
+function renderAcordeonPeriodo(p, idx, contenedor) {
+  const esInicial = p.esInicial;
+  const tcTotal   = sumaTotal(idx, 'TC', 'saldo');
+  const crTotal   = sumaTotal(idx, 'CR', 'saldo');
+  const total     = tcTotal + crTotal;
+
+  const card = document.createElement('div');
+  card.className = 'ac-card' + (p.cerrado ? '' : ' ac-activo');
+
+  // Header del acordeón
+  const header = document.createElement('div');
+  header.className = 'ac-header';
+  header.innerHTML = `
+    <div class="ac-header-left">
+      ${!p.cerrado ? '<span class="ac-badge">● Activo</span>' : ''}
+      <span class="ac-fecha">${p.fecha}</span>
+      <span class="ac-label">${esInicial ? 'Saldo Inicial' : 'Período'}</span>
+    </div>
+    <div class="ac-header-right">
+      <span class="ac-total">${formatCOP(total)}</span>
+      <span class="ac-chevron">▾</span>
+    </div>`;
+
+  // Cuerpo del acordeón (empieza abierto si es activo)
+  const body = document.createElement('div');
+  body.className = 'ac-body' + (!p.cerrado ? ' ac-open' : '');
+
+  // Filas por tarjeta
+  state.tarjetas.forEach(t => {
+    const tData   = p.tarjetas[t.id] || {};
+    const saldo   = getSaldo(idx, t.id);
+    const gastos  = getGastos(idx, t.id);
+
+    const row = document.createElement('div');
+    row.className = 'ac-row';
+
+    if (esInicial) {
+      // Saldo inicial: una sola fila editable
+      const inputEl = !p.cerrado ? `<input type="text" class="ac-input" data-tid="${t.id}" data-pid="${p.id}" value="${tData.saldoInicial ? formatCOP(tData.saldoInicial) : ''}">` : `<span class="ac-val">${formatCOP(tData.saldoInicial || 0)}</span>`;
+      row.innerHTML = `<span class="ac-nombre">${t.nombre}</span>${inputEl}`;
+    } else {
+      row.innerHTML = `
+        <span class="ac-nombre">${t.nombre}</span>
+        <div class="ac-valores">
+          <div class="ac-fila-val">
+            <span class="ac-etiq">Deuda</span>
+            ${!p.cerrado
+              ? `<input type="text" class="ac-input" data-campo="deudaActual" data-tid="${t.id}" data-pid="${p.id}" value="${tData.deudaActual ? formatCOP(tData.deudaActual) : ''}">`
+              : `<span class="ac-val">${formatCOP(tData.deudaActual || 0)}</span>`}
+          </div>
+          <div class="ac-fila-val">
+            <span class="ac-etiq ac-gastos">Gastos</span>
+            <span class="ac-val ac-gastos">${formatCOP(gastos)}</span>
+          </div>
+          <div class="ac-fila-val">
+            <span class="ac-etiq">Pagos</span>
+            ${!p.cerrado
+              ? `<input type="text" class="ac-input" data-campo="pagos" data-tid="${t.id}" data-pid="${p.id}" value="${tData.pagos ? formatCOP(tData.pagos) : ''}">`
+              : `<span class="ac-val">${formatCOP(tData.pagos || 0)}</span>`}
+          </div>
+          <div class="ac-fila-val ac-fila-saldo">
+            <span class="ac-etiq">Saldo</span>
+            <span class="ac-val ac-saldo-val" data-sid="${p.id}-${t.id}">${formatCOP(saldo)}</span>
+          </div>
+        </div>`;
+    }
+
+    body.appendChild(row);
+  });
+
+  // Totales al pie
+  const footer = document.createElement('div');
+  footer.className = 'ac-footer';
+  footer.innerHTML = `
+    <div class="ac-total-row"><span>Total TC</span><span>${formatCOP(tcTotal)}</span></div>
+    <div class="ac-total-row"><span>Total CR</span><span>${formatCOP(crTotal)}</span></div>
+    <div class="ac-total-row ac-total-gen"><span>Total</span><span>${formatCOP(total)}</span></div>`;
+  body.appendChild(footer);
+
+  // Toggle acordeón
+  header.addEventListener('click', () => {
+    body.classList.toggle('ac-open');
+    header.querySelector('.ac-chevron').textContent = body.classList.contains('ac-open') ? '▾' : '▸';
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  contenedor.appendChild(card);
+
+  // Inputs del acordeón — misma lógica que la tabla
+  card.querySelectorAll('.ac-input').forEach(input => {
+    const pid   = Number(input.dataset.pid);
+    const tid   = input.dataset.tid;
+    const campo = input.dataset.campo || 'saldoInicial';
+    const periodoObj = state.periodos.find(x => x.id === pid);
+    if (!periodoObj) return;
+
+    input.addEventListener('focus', () => {
+      const num = periodoObj.tarjetas[tid]?.[campo] || 0;
+      input.value = num === 0 ? '' : String(num);
+      input.select();
+    });
+    input.addEventListener('input', () => {
+      const num = parseFloat(input.value.replace(/[^\d.-]/g, '')) || 0;
+      input._valor = num;
+      periodoObj.tarjetas[tid][campo] = num;
+      guardar();
+      // Actualizar saldo visible
+      const idxP = state.periodos.findIndex(x => x.id === pid);
+      const saldoEl = card.querySelector(`[data-sid="${pid}-${tid}"]`);
+      if (saldoEl) saldoEl.textContent = formatCOP(getSaldo(idxP, tid));
+    });
+    input.addEventListener('blur', () => {
+      const num = periodoObj.tarjetas[tid]?.[campo] || 0;
+      input.value = num === 0 ? '' : formatCOP(num);
+    });
+  });
+}
+
+function rerenderAcordeon() {
+  const contenedor = document.getElementById('acordeon-body');
+  if (!contenedor) return;
+  contenedor.innerHTML = '';
+  state.periodos.forEach((p, i) => renderAcordeonPeriodo(p, i, contenedor));
 }
 
 function renderHeader() {
   const thead = document.getElementById('tabla-header');
   thead.innerHTML = '';
   const tr = document.createElement('tr');
-  ['Fecha', 'Estado', ...state.tarjetas.map(t => t.nombre), 'Total TC', 'Total CR', 'Total']
+  ['Fecha', 'Estado', ...state.tarjetas.map(t => t.nombre), 'Total TC', 'Total CR', 'Total OD', 'Total']
     .forEach((n, i, arr) => {
       const th = document.createElement('th');
       th.textContent = n;
-      if (i >= arr.length - 3) th.className = 'th-total';
+      if (i >= arr.length - 4) th.className = 'th-total';
       tr.appendChild(th);
     });
   thead.appendChild(tr);
@@ -335,6 +471,7 @@ function rerenderTabla() {
   document.getElementById('tabla-body').innerHTML = '';
   state.periodos.forEach((p, i) => renderPeriodo(p, i));
   if (wrapper) wrapper.scrollLeft = scrollLeft;
+  rerenderAcordeon();
 }
 
 // ── Eventos ──────────────────────────────────────────────────────────────────
@@ -431,7 +568,7 @@ function guardarCambiosModal() {
 }
 
 function renderListaColumnas() {
-  ['TC', 'CR'].forEach(tipo => {
+  ['TC', 'CR', 'OD'].forEach(tipo => {
     const lista = document.getElementById(`lista-${tipo.toLowerCase()}`);
     lista.innerHTML = '';
     const cols = state.tarjetas.filter(t => t.tipo === tipo);
@@ -478,7 +615,7 @@ async function agregarColumna() {
   const tipo   = document.getElementById('nueva-tipo').value;
 
   if (!nombre) {
-    await dlgAlert('Campo requerido', 'Ingresa un nombre para la nueva columna.', 'info');
+    await dlgAlert('Campo requerido', 'Ingresa un nombre para la nueva cuenta.', 'info');
     return;
   }
 

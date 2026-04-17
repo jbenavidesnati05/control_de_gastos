@@ -572,14 +572,17 @@ tbody td {
 /* ── Columnas de totales ── */
 .col-tc  { background: #fefcbf; font-weight: 600; }
 .col-cr  { background: #feebc8; font-weight: 600; }
+.col-od  { background: #c6f6d5; font-weight: 600; }
 .col-gen { background: #fed7e2; font-weight: 600; }
 
 .fila-saldo .col-tc  { background: #f6e05e; }
 .fila-saldo .col-cr  { background: #f6ad55; }
+.fila-saldo .col-od  { background: #38a169; color: white; }
 .fila-saldo .col-gen { background: #fc8181; color: #742a2a; }
 
 .fila-saldoInicial .col-tc  { background: #9ae6b4; }
 .fila-saldoInicial .col-cr  { background: #68d391; }
+.fila-saldoInicial .col-od  { background: #9ae6b4; }
 .fila-saldoInicial .col-gen { background: #48bb78; color: #1a202c; }
 
 /* ── Inputs editables ── */
@@ -624,4 +627,104 @@ tbody td {
   background: #e2e8f0;
   border: none;
   padding: 0;
+}
+
+/* ── Hamburguesa (solo móvil) ── */
+.btn-hamburguesa {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  background: transparent;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-hamburguesa span {
+  display: block;
+  height: 2px;
+  background: #a0aec0;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.btn-hamburguesa.abierto span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.btn-hamburguesa.abierto span:nth-child(2) { opacity: 0; }
+.btn-hamburguesa.abierto span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.btn-movil-periodo { display: none; }
+
+.usuario-foto-movil {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #4a5568;
+  object-fit: cover;
+}
+
+.header-right {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Responsive header ── */
+@media (max-width: 768px) {
+  header {
+    position: relative;
+    flex-wrap: nowrap;
+    padding: 10px 14px;
+  }
+
+  .header-right {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .btn-hamburguesa  { display: flex; }
+  .btn-movil-periodo { display: flex; }
+
+  /* Menú desplegable */
+  .header-actions {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    background: #1a202c;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 14px 14px;
+    gap: 8px;
+    z-index: 50;
+    border-top: 1px solid #2d3748;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  }
+
+  .header-actions.menu-abierto { display: flex; }
+
+  /* Ocultar + Nuevo Período del menú en móvil (ya está el botón rápido) */
+  #btn-nuevo-periodo { display: none; }
+
+  .header-actions .btn-primary,
+  .header-actions .btn-secondary,
+  .header-actions .btn-danger,
+  .header-actions .btn-logout {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .usuario-info {
+    padding: 6px 0;
+    border-bottom: 1px solid #2d3748;
+    margin-bottom: 2px;
+  }
+
+  #btn-guardado { display: none; }
 }

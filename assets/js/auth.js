@@ -23,6 +23,9 @@ function mostrarApp(usuario) {
   document.getElementById('usuario-nombre').textContent = usuario.displayName || usuario.email;
   document.getElementById('usuario-foto').src = usuario.photoURL || '';
   document.getElementById('usuario-foto').classList.toggle('hidden', !usuario.photoURL);
+  const fotoMovil = document.getElementById('usuario-foto-movil');
+  fotoMovil.src = usuario.photoURL || '';
+  fotoMovil.classList.toggle('hidden', !usuario.photoURL);
 }
 
 // Escucha cambios de sesion
@@ -38,4 +41,25 @@ auth.onAuthStateChanged(usuario => {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-login').addEventListener('click', loginConGoogle);
   document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
+
+  // Hamburguesa
+  const btnHam    = document.getElementById('btn-menu-hamburguesa');
+  const actions   = document.getElementById('header-actions');
+  const btnMovil  = document.getElementById('btn-nuevo-periodo-movil');
+
+  btnHam.addEventListener('click', () => {
+    actions.classList.toggle('menu-abierto');
+    btnHam.classList.toggle('abierto');
+  });
+
+  // Cierra el menú al hacer click fuera
+  document.addEventListener('click', e => {
+    if (!btnHam.contains(e.target) && !actions.contains(e.target)) {
+      actions.classList.remove('menu-abierto');
+      btnHam.classList.remove('abierto');
+    }
+  });
+
+  // Botón + Período del móvil hace lo mismo que el del header
+  btnMovil.addEventListener('click', () => cerrarYCrearPeriodo());
 });

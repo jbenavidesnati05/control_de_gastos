@@ -1,5 +1,5 @@
 // Configuracion de tarjetas y creditos
-// tipo "TC" = Tarjeta de Credito | tipo "CR" = Credito
+// tipo "TC" = Tarjeta de Credito | tipo "CR" = Credito | tipo "OD" = Otras Deudas
 const DEFAULT_TARJETAS = [
   { id: 'rappi',      nombre: 'Rappi',        tipo: 'TC' },
   { id: 'nu',         nombre: 'NU',           tipo: 'TC' },
