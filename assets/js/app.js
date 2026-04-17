@@ -163,11 +163,31 @@ function mkTd(className) {
 
 function mkInput(valor, onCambio) {
   const input = document.createElement('input');
-  input.type      = 'number';
+  input.type      = 'text';
   input.className = 'input-valor';
-  input.value     = valor;
-  input.min       = 0;
-  input.addEventListener('input', () => onCambio(parseFloat(input.value) || 0));
+  input.value     = valor === 0 ? '' : formatCOP(valor);
+
+  // Al hacer click: muestra solo el numero para editar
+  input.addEventListener('focus', () => {
+    const num = input._valor || 0;
+    input.value = num === 0 ? '' : String(num);
+    input.select();
+  });
+
+  // Al escribir: guarda el numero internamente
+  input.addEventListener('input', () => {
+    const num = parseFloat(input.value.replace(/[^\d.-]/g, '')) || 0;
+    input._valor = num;
+    onCambio(num);
+  });
+
+  // Al salir: muestra formateado con $
+  input.addEventListener('blur', () => {
+    const num = input._valor || 0;
+    input.value = num === 0 ? '' : formatCOP(num);
+  });
+
+  input._valor = valor;
   return input;
 }
 
@@ -319,13 +339,15 @@ function rerenderTabla() {
 
 // ── Eventos ──────────────────────────────────────────────────────────────────
 
-function cerrarYCrearPeriodo() {
+async function cerrarYCrearPeriodo() {
   const actual = state.periodos.find(p => !p.cerrado);
   if (!actual) return;
 
-  const ok = confirm(
-    `¿Cerrar el período del ${actual.fecha} y crear uno nuevo?\n\n` +
-    `Se creará un nuevo período en blanco con fecha de hoy.`
+  const ok = await dlgConfirm(
+    'Cerrar período',
+    `¿Cerrar el período del <strong>${actual.fecha}</strong> y crear uno nuevo?<br><br>Se creará un nuevo período en blanco con fecha de hoy.`,
+    'warning',
+    'Cerrar y crear nuevo'
   );
   if (!ok) return;
 
@@ -347,8 +369,14 @@ function cerrarYCrearPeriodo() {
   rerenderTabla();
 }
 
-function limpiarDatos() {
-  if (confirm('¿Borrar todos los datos y empezar desde cero?')) {
+async function limpiarDatos() {
+  const ok = await dlgConfirm(
+    'Reiniciar datos',
+    'Se borrarán <strong>todos los períodos y columnas</strong> y empezarás desde cero.<br><br>Esta acción no se puede deshacer.',
+    'danger',
+    'Sí, reiniciar'
+  );
+  if (ok) {
     iniciarNuevo();
     renderHeader();
     rerenderTabla();
@@ -445,12 +473,12 @@ function renderListaColumnas() {
   });
 }
 
-function agregarColumna() {
+async function agregarColumna() {
   const nombre = document.getElementById('nueva-nombre').value.trim();
   const tipo   = document.getElementById('nueva-tipo').value;
 
   if (!nombre) {
-    alert('Ingresa un nombre para la columna.');
+    await dlgAlert('Campo requerido', 'Ingresa un nombre para la nueva columna.', 'info');
     return;
   }
 
@@ -476,8 +504,13 @@ function agregarColumna() {
   document.getElementById('nueva-nombre').value = '';
 }
 
-function eliminarColumna(id, nombre) {
-  const ok = confirm(`¿Eliminar la columna "${nombre}"?\n\nSe borrará de todos los períodos y no se puede deshacer.`);
+async function eliminarColumna(id, nombre) {
+  const ok = await dlgConfirm(
+    `Eliminar columna`,
+    `¿Eliminar <strong>${nombre}</strong>?<br><br>Se borrará de todos los períodos y no se puede deshacer.`,
+    'danger',
+    'Eliminar'
+  );
   if (!ok) return;
 
   // Quitar de la lista de tarjetas

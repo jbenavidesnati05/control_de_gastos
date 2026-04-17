@@ -13,6 +13,100 @@ body {
 
 .hidden { display: none !important; }
 
+/* ── Diálogos custom ── */
+.dlg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: dlgFadeIn 0.15s ease;
+}
+
+.dlg-hidden { display: none !important; }
+
+@keyframes dlgFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.dlg-card {
+  background: white;
+  border-radius: 12px;
+  width: 380px;
+  max-width: 92vw;
+  padding: 32px 28px 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  animation: dlgSlideIn 0.2s ease;
+}
+
+@keyframes dlgSlideIn {
+  from { transform: translateY(-16px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.dlg-icon-wrap {
+  margin-bottom: 16px;
+}
+
+.dlg-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.dlg-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 10px;
+}
+
+.dlg-msg {
+  font-size: 13px;
+  color: #718096;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.dlg-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.dlg-btn-cancel,
+.dlg-btn-ok {
+  min-width: 110px;
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  border: none;
+  color: white;
+}
+
+.dlg-btn-cancel {
+  background: #e2e8f0;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+}
+
+.dlg-btn-cancel:hover { background: #cbd5e0; }
+
+.dlg-btn-ok:hover { opacity: 0.88; transform: translateY(-1px); }
+
 /* ── Pantalla Login ── */
 #pantalla-login {
   min-height: 100vh;
@@ -104,7 +198,9 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px;
   background: #1a202c;
   color: white;
 }
@@ -113,11 +209,44 @@ header h1 {
   font-size: 17px;
   font-weight: 600;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* En móvil: ocultar nombre de usuario, solo foto */
+@media (max-width: 768px) {
+  header h1 { font-size: 15px; }
+
+  #usuario-nombre { display: none; }
+
+  .btn-guardado { display: none; }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-logout {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* En pantallas muy pequeñas: header en 2 filas */
+@media (max-width: 480px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .btn-primary {
@@ -474,10 +603,6 @@ tbody td {
   background: #fff;
 }
 
-/* Ocultar flechas del input number */
-.input-valor::-webkit-inner-spin-button,
-.input-valor::-webkit-outer-spin-button { -webkit-appearance: none; }
-.input-valor { -moz-appearance: textfield; appearance: textfield; }
 
 /* ── Indicador de periodo activo ── */
 .fila-indicador td {

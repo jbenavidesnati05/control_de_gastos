@@ -1,14 +1,15 @@
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 function loginConGoogle() {
-  auth.signInWithPopup(googleProvider).catch(err => {
+  auth.signInWithPopup(googleProvider).catch(async err => {
     console.error('Error al iniciar sesión:', err);
-    alert('No se pudo iniciar sesión. Intenta de nuevo.');
+    await dlgAlert('Error al iniciar sesión', 'No se pudo conectar con Google. Intenta de nuevo.', 'danger');
   });
 }
 
-function cerrarSesion() {
-  if (confirm('¿Cerrar sesión?')) auth.signOut();
+async function cerrarSesion() {
+  const ok = await dlgConfirm('Cerrar sesión', '¿Deseas salir de tu cuenta?', 'warning', 'Salir');
+  if (ok) auth.signOut();
 }
 
 function mostrarLogin() {
