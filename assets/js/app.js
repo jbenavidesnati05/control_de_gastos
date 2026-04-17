@@ -11,8 +11,12 @@ function hoy() {
 
 function formatCOP(v) {
   if (v === 0) return '$ -';
-  const sign = v < 0 ? '-' : '';
-  return `${sign}$ ${Math.abs(v).toLocaleString('es-CO')}`;
+  return new Intl.NumberFormat('es-CO', {
+    style:                 'currency',
+    currency:              'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(v);
 }
 
 function fijarCelda(id, valor) {
