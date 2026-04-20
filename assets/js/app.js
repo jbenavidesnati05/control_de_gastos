@@ -673,6 +673,7 @@ async function initApp(uid) {
 
   renderHeader();
   rerenderTabla();
+  initAnalisis();
 
   // Eventos — solo se registran una vez
   if (!window._eventosRegistrados) {

@@ -11,6 +11,17 @@ body {
   color: #333;
 }
 
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main#vista-tabla,
+#vista-analisis {
+  flex: 1;
+}
+
 .hidden { display: none !important; }
 
 /* ── Diálogos custom ── */
@@ -727,4 +738,250 @@ tbody td {
   }
 
   #btn-guardado { display: none; }
+}
+
+/* ── Footer ── */
+.app-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+  background: #1a202c;
+  border-top: 1px solid #2d3748;
+  text-align: center;
+}
+
+.footer-copy {
+  font-size: 12px;
+  color: #4a5568;
+  letter-spacing: 0.3px;
+}
+
+.footer-copy strong {
+  color: #718096;
+  font-weight: 600;
+}
+
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #718096;
+  font-size: 13px;
+  text-decoration: none;
+  border: 1px solid #2d3748;
+  background: transparent;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.social-link:hover { color: white; border-color: #4a5568; background: #2d3748; }
+
+/* ── Tabs de vista ── */
+.vista-nav {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  background: #1a202c;
+  border-top: 1px solid #2d3748;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  background: transparent;
+  color: #718096;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover { color: #a0aec0; }
+
+.tab-btn.tab-activo {
+  color: #63b3ed;
+  border-bottom-color: #63b3ed;
+  font-weight: 600;
+}
+
+/* ── Análisis: wrapper ── */
+.analisis-wrapper {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Tarjetas resumen ── */
+.analisis-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.resumen-card {
+  background: white;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rc-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #718096;
+}
+
+.rc-valor {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.2;
+}
+
+.rc-nombre { font-size: 18px; }
+.rc-num    { font-size: 28px; }
+
+.rc-tendencia { font-size: 18px; }
+.rc-tendencia.up      { color: #e53e3e; }
+.rc-tendencia.down    { color: #38a169; }
+.rc-tendencia.neutral { color: #718096; }
+
+.rc-sub {
+  font-size: 11px;
+  color: #a0aec0;
+  margin-top: 4px;
+}
+
+.rc-sub.rc-up   { color: #e53e3e; font-weight: 600; }
+.rc-sub.rc-down { color: #38a169; font-weight: 600; }
+
+/* Barra de acento superior por tipo */
+.resumen-card { position: relative; overflow: hidden; }
+
+.rc-acento-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  border-radius: 10px 10px 0 0;
+}
+
+.rc-acento-tc  .rc-acento-bar { background: #d69e2e; }
+.rc-acento-cr  .rc-acento-bar { background: #dd6b20; }
+.rc-acento-od  .rc-acento-bar { background: #38a169; }
+.rc-acento-gen .rc-acento-bar { background: #e53e3e; }
+
+/* ── Grid de gráficas ── */
+.analisis-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.chart-box {
+  background: white;
+  border-radius: 10px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 14px;
+  letter-spacing: 0.1px;
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.chart-empty {
+  text-align: center;
+  color: #a0aec0;
+  font-size: 13px;
+  padding: 40px 0;
+}
+
+/* ── Tabla de variación ── */
+.tabla-variacion {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tabla-variacion thead th {
+  background: #2d3748;
+  color: #e2e8f0;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  border: 1px solid #4a5568;
+}
+
+.tabla-variacion tbody tr:hover { background: #f7fafc; }
+
+.tabla-variacion td {
+  padding: 9px 14px;
+  border: 1px solid #e2e8f0;
+  color: #2d3748;
+}
+
+.td-r  { text-align: right; }
+.fw    { font-weight: 600; }
+
+.td-var { font-weight: 600; white-space: nowrap; }
+.td-var.subio  { color: #e53e3e; }
+.td-var.bajo   { color: #38a169; }
+.td-var.igual  { color: #718096; }
+.td-var.nueva  { color: #3182ce; }
+
+.var-icono { margin-right: 4px; font-size: 13px; }
+.var-pct   { margin-left: 6px; font-size: 11px; opacity: 0.75; font-weight: 400; }
+
+/* ── Badges de tipo ── */
+.badge-tipo {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-right: 4px;
+}
+.badge-tc  { background: #fefcbf; color: #744210; }
+.badge-cr  { background: #feebc8; color: #7b341e; }
+.badge-od  { background: #c6f6d5; color: #22543d; }
+
+/* ── Responsive análisis ── */
+@media (max-width: 900px) {
+  .analisis-cards         { grid-template-columns: repeat(2, 1fr); }
+  .analisis-charts-grid   { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 540px) {
+  .analisis-cards { grid-template-columns: 1fr 1fr; }
+  .rc-valor       { font-size: 16px; }
+  .rc-num         { font-size: 22px; }
+  .chart-canvas-wrap { height: 220px; }
 }

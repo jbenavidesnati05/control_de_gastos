@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Gastos</title>
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
@@ -95,7 +96,13 @@
       </div>
     </div>
 
-    <main>
+    <!-- Navegación de vistas -->
+    <div class="vista-nav">
+      <button id="tab-tabla"    class="tab-btn tab-activo">📋 Tabla</button>
+      <button id="tab-analisis" class="tab-btn">📊 Análisis</button>
+    </div>
+
+    <main id="vista-tabla">
       <div class="tabla-wrapper">
         <table id="tabla-gastos">
           <thead id="tabla-header"></thead>
@@ -104,6 +111,39 @@
       </div>
     </main>
 
+    <!-- Vista de análisis -->
+    <div id="vista-analisis" class="hidden">
+      <div class="analisis-wrapper">
+
+        <!-- Tarjetas resumen -->
+        <div class="analisis-cards" id="analisis-cards"></div>
+
+        <!-- Gráficas -->
+        <div class="analisis-charts-grid">
+          <div class="chart-box">
+            <h3 class="chart-title">Evolución de deuda por período</h3>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-evolucion"></canvas>
+            </div>
+          </div>
+          <div class="chart-box">
+            <h3 class="chart-title">Ranking de deuda actual</h3>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-ranking"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de variación -->
+        <div class="chart-box">
+          <h3 class="chart-title">Variación por cuenta (último vs anterior)</h3>
+          <table id="tabla-variacion" class="tabla-variacion"></table>
+        </div>
+
+      </div>
+    </div>
+
+
   </div>
 
   <!-- Firebase SDK (compat) -->
@@ -111,11 +151,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
   <!-- App -->
   <script src="assets/js/data.js"></script>
   <script src="assets/js/firebase.js"></script>
   <script src="assets/js/dialogs.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/analisis.js"></script>
   <script src="assets/js/auth.js"></script>
 
 </body>
