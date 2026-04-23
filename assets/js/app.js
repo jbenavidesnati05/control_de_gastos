@@ -489,6 +489,7 @@ async function cerrarYCrearPeriodo() {
   if (!ok) return;
 
   actual.cerrado = true;
+  actual.fecha   = hoy();
 
   const tarjetas = {};
   state.tarjetas.forEach(t => { tarjetas[t.id] = { deudaActual: 0, pagos: 0 }; });
