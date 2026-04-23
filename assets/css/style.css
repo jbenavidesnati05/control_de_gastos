@@ -915,7 +915,8 @@ tbody td {
   height: 280px;
 }
 
-.chart-empty {
+.chart-empty,
+.analisis-empty {
   text-align: center;
   color: #a0aec0;
   font-size: 13px;

@@ -19,25 +19,44 @@ function initAnalisis() {
 
 // ── Datos calculados ─────────────────────────────────────────────────────────
 
+// Solo períodos cerrados (historial real — excluye el período activo en edición)
 function getDatosPeriodos() {
-  return state.periodos.map((p, idx) => ({
-    fecha:   p.fecha,
-    esInicial: p.esInicial,
-    totalTC: sumaTotal(idx, 'TC', 'saldo'),
-    totalCR: sumaTotal(idx, 'CR', 'saldo'),
-    totalOD: sumaTotal(idx, 'OD', 'saldo'),
-    get total() { return this.totalTC + this.totalCR + this.totalOD; },
-    saldos: state.tarjetas.reduce((acc, t) => {
-      acc[t.id] = getSaldo(idx, t.id);
-      return acc;
-    }, {})
-  }));
+  return state.periodos
+    .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => p.cerrado)
+    .map(({ p, idx }) => ({
+      fecha:     p.fecha,
+      esInicial: p.esInicial,
+      totalTC:   sumaTotal(idx, 'TC', 'saldo'),
+      totalCR:   sumaTotal(idx, 'CR', 'saldo'),
+      totalOD:   sumaTotal(idx, 'OD', 'saldo'),
+      get total() { return this.totalTC + this.totalCR + this.totalOD; },
+      saldos: state.tarjetas.reduce((acc, t) => {
+        acc[t.id] = getSaldo(idx, t.id);
+        return acc;
+      }, {}),
+      _idx: idx
+    }));
 }
 
 // ── Render principal ─────────────────────────────────────────────────────────
 
 function renderAnalisis() {
   if (!state || !state.periodos || state.periodos.length === 0) return;
+
+  const cerrados = getDatosPeriodos();
+
+  if (cerrados.length === 0) {
+    document.getElementById('analisis-cards').innerHTML =
+      '<p class="analisis-empty">Aún no hay períodos cerrados. Cierra al menos un período para ver el análisis.</p>';
+    document.getElementById('chart-evolucion').closest('.chart-canvas-wrap').innerHTML =
+      '<p class="chart-empty">Sin historial disponible.</p>';
+    document.getElementById('chart-ranking').closest('.chart-canvas-wrap').innerHTML =
+      '<p class="chart-empty">Sin historial disponible.</p>';
+    document.getElementById('tabla-variacion').innerHTML = '';
+    return;
+  }
+
   renderResumenCards();
   renderChartEvolucion();
   renderChartRanking();
@@ -230,8 +249,9 @@ function renderChartRanking() {
 // ── Tabla de variación ───────────────────────────────────────────────────────
 
 function renderTablaVariacion() {
-  const lastIdx = state.periodos.length - 1;
-  const prevIdx = lastIdx > 0 ? lastIdx - 1 : null;
+  const cerrados = getDatosPeriodos();
+  const lastIdx  = cerrados[cerrados.length - 1]._idx;
+  const prevIdx  = cerrados.length > 1 ? cerrados[cerrados.length - 2]._idx : null;
 
   const filas = state.tarjetas.map(t => {
     const saldoActual = getSaldo(lastIdx, t.id);
