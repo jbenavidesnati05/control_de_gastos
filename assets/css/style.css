@@ -683,6 +683,65 @@ tbody td {
   gap: 8px;
 }
 
+/* ── Header izquierdo (título + branding) ── */
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+/* ── Branding desarrollador ── */
+.dev-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.dev-label {
+  font-size: 10px;
+  color: #a0aec0;
+  letter-spacing: 0.3px;
+}
+
+.dev-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.dev-name:hover { color: #63b3ed; }
+
+.dev-tagline {
+  font-size: 10px;
+  color: #63b3ed;
+}
+
+.dev-wsp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 4px 10px;
+  background: #25d366;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.dev-wsp:hover { background: #1ebe5d; }
+
+@media (max-width: 768px) {
+  .dev-branding {
+    display: none;
+  }
+}
+
 /* ── Responsive header ── */
 @media (max-width: 768px) {
   header {
