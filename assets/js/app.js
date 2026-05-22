@@ -1,5 +1,6 @@
-let state   = { tarjetas: [], periodos: [] };
-let _uid    = null;   // UID del usuario autenticado
+let state          = { tarjetas: [], periodos: [] };
+let _uid           = null;
+let _mostrarTodosP = false;
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
@@ -17,6 +18,11 @@ function formatCOP(v) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(v);
+}
+
+function formatMiles(n) {
+  if (!n) return '';
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function fijarCelda(id, valor) {
@@ -40,11 +46,15 @@ function guardar() {
   mostrarIndicador(true);
   clearTimeout(_guardadoTimer);
 
-  userDocRef(_uid).set(state)
-    .then(() => {
-      _guardadoTimer = setTimeout(() => mostrarIndicador(false), 800);
-    })
-    .catch(err => console.error('Error al guardar:', err));
+  // Debounce: espera 600ms desde el último cambio antes de escribir
+  _guardadoTimer = setTimeout(() => {
+    userDocRef(_uid).set(state)
+      .then(() => mostrarIndicador(false))
+      .catch(err => {
+        console.error('Error al guardar:', err);
+        mostrarIndicador(false);
+      });
+  }, 600);
 }
 
 async function cargar() {
@@ -168,28 +178,34 @@ function mkInput(valor, onCambio) {
   input.type      = 'text';
   input.className = 'input-valor';
   input.value     = valor === 0 ? '' : formatCOP(valor);
+  input._valor    = valor;
 
-  // Al hacer click: muestra solo el numero para editar
   input.addEventListener('focus', () => {
     const num = input._valor || 0;
-    input.value = num === 0 ? '' : String(num);
+    input.value = num === 0 ? '' : formatMiles(num);
     input.select();
   });
 
-  // Al escribir: guarda el numero internamente
   input.addEventListener('input', () => {
-    const num = parseFloat(input.value.replace(/[^\d.-]/g, '')) || 0;
+    const raw = input.value.replace(/\./g, '').replace(/[^\d]/g, '');
+    const num = parseInt(raw, 10) || 0;
     input._valor = num;
+    if (raw) {
+      input.value = formatMiles(num);
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
     onCambio(num);
   });
 
-  // Al salir: muestra formateado con $
   input.addEventListener('blur', () => {
     const num = input._valor || 0;
     input.value = num === 0 ? '' : formatCOP(num);
   });
 
-  input._valor = valor;
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+  });
+
   return input;
 }
 
@@ -424,15 +440,19 @@ function renderAcordeonPeriodo(p, idx, contenedor) {
 
     input.addEventListener('focus', () => {
       const num = periodoObj.tarjetas[tid]?.[campo] || 0;
-      input.value = num === 0 ? '' : String(num);
+      input.value = num === 0 ? '' : formatMiles(num);
       input.select();
     });
     input.addEventListener('input', () => {
-      const num = parseFloat(input.value.replace(/[^\d.-]/g, '')) || 0;
+      const raw = input.value.replace(/\./g, '').replace(/[^\d]/g, '');
+      const num = parseInt(raw, 10) || 0;
       input._valor = num;
+      if (raw) {
+        input.value = formatMiles(num);
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
       periodoObj.tarjetas[tid][campo] = num;
       guardar();
-      // Actualizar saldo visible
       const idxP = state.periodos.findIndex(x => x.id === pid);
       const saldoEl = card.querySelector(`[data-sid="${pid}-${tid}"]`);
       if (saldoEl) saldoEl.textContent = formatCOP(getSaldo(idxP, tid));
@@ -440,6 +460,9 @@ function renderAcordeonPeriodo(p, idx, contenedor) {
     input.addEventListener('blur', () => {
       const num = periodoObj.tarjetas[tid]?.[campo] || 0;
       input.value = num === 0 ? '' : formatCOP(num);
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
     });
   });
 }
@@ -455,21 +478,64 @@ function renderHeader() {
   const thead = document.getElementById('tabla-header');
   thead.innerHTML = '';
   const tr = document.createElement('tr');
-  ['Fecha', 'Estado', ...state.tarjetas.map(t => t.nombre), 'Total TC', 'Total CR', 'Total OD', 'Total']
-    .forEach((n, i, arr) => {
-      const th = document.createElement('th');
-      th.textContent = n;
-      if (i >= arr.length - 4) th.className = 'th-total';
-      tr.appendChild(th);
-    });
+
+  ['Fecha', 'Estado'].forEach(n => {
+    const th = document.createElement('th');
+    th.textContent = n;
+    tr.appendChild(th);
+  });
+
+  state.tarjetas.forEach(t => {
+    const th = document.createElement('th');
+    th.textContent = t.nombre;
+    tr.appendChild(th);
+  });
+
+  ['Total TC', 'Total CR', 'Total OD', 'Total'].forEach(n => {
+    const th = document.createElement('th');
+    th.className = 'th-total';
+    th.textContent = n;
+    tr.appendChild(th);
+  });
+
   thead.appendChild(tr);
+}
+
+function toggleHistorial() {
+  _mostrarTodosP = !_mostrarTodosP;
+  rerenderTabla();
 }
 
 function rerenderTabla() {
   const wrapper    = document.querySelector('.tabla-wrapper');
   const scrollLeft = wrapper?.scrollLeft || 0;
-  document.getElementById('tabla-body').innerHTML = '';
-  state.periodos.forEach((p, i) => renderPeriodo(p, i));
+  const tbody      = document.getElementById('tabla-body');
+  tbody.innerHTML  = '';
+
+  const total   = state.periodos.length;
+  const VISIBLE = 3;
+  const desde   = (!_mostrarTodosP && total > VISIBLE) ? total - VISIBLE : 0;
+  const cols    = state.tarjetas.length + 6;
+
+  if (desde > 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'fila-historial';
+    const td = document.createElement('td');
+    td.colSpan = cols;
+    td.innerHTML = `<button class="btn-ver-historial" onclick="toggleHistorial()">+ Ver ${desde} período${desde !== 1 ? 's' : ''} anterior${desde !== 1 ? 'es' : ''}</button>`;
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  } else if (_mostrarTodosP && total > VISIBLE) {
+    const tr = document.createElement('tr');
+    tr.className = 'fila-historial';
+    const td = document.createElement('td');
+    td.colSpan = cols;
+    td.innerHTML = `<button class="btn-ver-historial btn-colapsar" onclick="toggleHistorial()">− Mostrar solo los últimos ${VISIBLE} períodos</button>`;
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+
+  state.periodos.forEach((p, i) => { if (i >= desde) renderPeriodo(p, i); });
   if (wrapper) wrapper.scrollLeft = scrollLeft;
   rerenderAcordeon();
 }
@@ -527,7 +593,7 @@ async function limpiarDatos() {
 let _nombresSnapshot = [];
 
 function abrirModal() {
-  _nombresSnapshot = state.tarjetas.map(t => ({ id: t.id, nombre: t.nombre }));
+  _nombresSnapshot = state.tarjetas.map(t => ({ id: t.id, nombre: t.nombre, diaPago: t.diaPago, valorCuota: t.valorCuota }));
   renderListaColumnas();
   verificarCambiosModal();
   document.getElementById('modal-overlay').classList.remove('hidden');
@@ -535,10 +601,13 @@ function abrirModal() {
 
 function cerrarModal(guardar = false) {
   if (!guardar) {
-    // Restaurar nombres originales si el usuario cancela
     _nombresSnapshot.forEach(snap => {
       const t = state.tarjetas.find(t => t.id === snap.id);
-      if (t) t.nombre = snap.nombre;
+      if (t) {
+        t.nombre = snap.nombre;
+        if (snap.diaPago)    t.diaPago    = snap.diaPago;    else delete t.diaPago;
+        if (snap.valorCuota) t.valorCuota = snap.valorCuota; else delete t.valorCuota;
+      }
     });
   }
   document.getElementById('modal-overlay').classList.add('hidden');
@@ -546,21 +615,37 @@ function cerrarModal(guardar = false) {
 }
 
 function verificarCambiosModal() {
-  const haycambios = _nombresSnapshot.some(snap => {
-    const input = document.getElementById(`input-col-${snap.id}`);
-    return input && input.value.trim() !== snap.nombre;
+  const hayCambios = _nombresSnapshot.some(snap => {
+    const inputN = document.getElementById(`input-col-${snap.id}`);
+    const inputD = document.getElementById(`input-dia-${snap.id}`);
+    const inputC = document.getElementById(`input-cuota-${snap.id}`);
+    const nombreCambio = inputN && inputN.value.trim() !== snap.nombre;
+    const diaCambio    = inputD && (inputD.value || '') !== String(snap.diaPago || '');
+    const cuotaActual  = inputC ? (parseInt(inputC.value.replace(/[^\d]/g, ''), 10) || 0) : 0;
+    const cuotaCambio  = inputC && cuotaActual !== (snap.valorCuota || 0);
+    return nombreCambio || diaCambio || cuotaCambio;
   });
   const btn = document.getElementById('modal-guardar');
-  if (btn) btn.disabled = !haycambios;
+  if (btn) btn.disabled = !hayCambios;
 }
 
 function guardarCambiosModal() {
-  // Leer los inputs del modal y aplicar los nombres editados
   state.tarjetas.forEach(t => {
-    const input = document.getElementById(`input-col-${t.id}`);
-    if (!input) return;
-    const nuevoNombre = input.value.trim();
-    if (nuevoNombre) t.nombre = nuevoNombre;
+    const inputN = document.getElementById(`input-col-${t.id}`);
+    if (inputN) {
+      const nuevoNombre = inputN.value.trim();
+      if (nuevoNombre) t.nombre = nuevoNombre;
+    }
+    const inputD = document.getElementById(`input-dia-${t.id}`);
+    if (inputD) {
+      const dia = parseInt(inputD.value, 10);
+      if (dia >= 1 && dia <= 31) t.diaPago = dia; else delete t.diaPago;
+    }
+    const inputC = document.getElementById(`input-cuota-${t.id}`);
+    if (inputC) {
+      const cuota = parseInt(inputC.value.replace(/[^\d]/g, ''), 10) || 0;
+      if (cuota > 0) t.valorCuota = cuota; else delete t.valorCuota;
+    }
   });
   guardar();
   renderHeader();
@@ -568,44 +653,97 @@ function guardarCambiosModal() {
   cerrarModal(true);
 }
 
+function mkMetaInput(id, placeholder, value, type = 'text') {
+  const input = document.createElement('input');
+  input.type        = type;
+  input.id          = id;
+  input.className   = 'input-meta';
+  input.placeholder = placeholder;
+  input.value       = value;
+  if (type === 'number') { input.min = 1; input.max = 31; }
+  input.addEventListener('input', verificarCambiosModal);
+  return input;
+}
+
 function renderListaColumnas() {
   ['TC', 'CR', 'OD'].forEach(tipo => {
-    const lista = document.getElementById(`lista-${tipo.toLowerCase()}`);
+    const lista   = document.getElementById(`lista-${tipo.toLowerCase()}`);
     lista.innerHTML = '';
-    const cols = state.tarjetas.filter(t => t.tipo === tipo);
+    const cols    = state.tarjetas.filter(t => t.tipo === tipo);
+    const esCuota = tipo === 'CR' || tipo === 'OD';
 
     cols.forEach(t => {
       const li = document.createElement('li');
       li.className = 'col-item';
 
-      // Input de nombre (editable inline, se guarda con el botón del footer)
-      const input = document.createElement('input');
-      input.type      = 'text';
-      input.id        = `input-col-${t.id}`;
-      input.className = 'input-nombre-col';
-      input.value     = t.nombre;
-      input.maxLength = 20;
-
-      input.addEventListener('input', verificarCambiosModal);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') input.blur();
-        if (e.key === 'Escape') { input.value = t.nombre; verificarCambiosModal(); input.blur(); }
+      // Nombre (ocupa el espacio disponible)
+      const inputNombre = document.createElement('input');
+      inputNombre.type      = 'text';
+      inputNombre.id        = `input-col-${t.id}`;
+      inputNombre.className = 'input-nombre-col';
+      inputNombre.value     = t.nombre;
+      inputNombre.maxLength = 20;
+      inputNombre.addEventListener('input', verificarCambiosModal);
+      inputNombre.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  inputNombre.blur();
+        if (e.key === 'Escape') { inputNombre.value = t.nombre; verificarCambiosModal(); inputNombre.blur(); }
       });
+      li.appendChild(inputNombre);
 
-      // Botón eliminar
-      const btn = document.createElement('button');
-      btn.textContent = 'Eliminar';
-      btn.className   = 'btn-eliminar-col';
+      // Día de pago (label + input, todo en línea)
+      const lblDia = document.createElement('label');
+      lblDia.className = 'col-item-label';
+      lblDia.innerHTML = '<span>Día de pago</span>';
+      lblDia.appendChild(mkMetaInput(`input-dia-${t.id}`, '1–31', t.diaPago || '', 'number'));
+      li.appendChild(lblDia);
 
-      if (cols.length === 1) {
-        btn.disabled = true;
-        btn.title    = `Debe haber al menos una columna de tipo ${tipo}`;
+      // Cuota mensual (solo CR y OD)
+      if (esCuota) {
+        const lblCuota = document.createElement('label');
+        lblCuota.className = 'col-item-label';
+        lblCuota.innerHTML = '<span>Cuota mensual</span>';
+
+        const inputCuota = document.createElement('input');
+        inputCuota.type        = 'text';
+        inputCuota.id          = `input-cuota-${t.id}`;
+        inputCuota.className   = 'input-meta input-meta-cuota';
+        inputCuota.placeholder = '$ 0';
+        inputCuota.value       = t.valorCuota ? formatCOP(t.valorCuota) : '';
+        inputCuota.addEventListener('focus', () => {
+          const num = t.valorCuota || 0;
+          inputCuota.value = num ? formatMiles(num) : '';
+          inputCuota.select();
+        });
+        inputCuota.addEventListener('input', () => {
+          const raw = inputCuota.value.replace(/\./g, '').replace(/[^\d]/g, '');
+          const num = parseInt(raw, 10) || 0;
+          if (raw) {
+            inputCuota.value = formatMiles(num);
+            inputCuota.setSelectionRange(inputCuota.value.length, inputCuota.value.length);
+          }
+          verificarCambiosModal();
+        });
+        inputCuota.addEventListener('blur', () => {
+          const num = parseInt(inputCuota.value.replace(/[^\d]/g, ''), 10) || 0;
+          inputCuota.value = num ? formatCOP(num) : '';
+        });
+        inputCuota.addEventListener('keydown', e => { if (e.key === 'Enter') inputCuota.blur(); });
+
+        lblCuota.appendChild(inputCuota);
+        li.appendChild(lblCuota);
       }
 
-      btn.addEventListener('click', () => eliminarColumna(t.id, t.nombre));
+      // Eliminar (al final de la línea)
+      const btnEliminar = document.createElement('button');
+      btnEliminar.textContent = 'Eliminar';
+      btnEliminar.className   = 'btn-eliminar-col';
+      if (cols.length === 1) {
+        btnEliminar.disabled = true;
+        btnEliminar.title    = `Debe haber al menos una columna de tipo ${tipo}`;
+      }
+      btnEliminar.addEventListener('click', () => eliminarColumna(t.id, t.nombre));
+      li.appendChild(btnEliminar);
 
-      li.appendChild(input);
-      li.appendChild(btn);
       lista.appendChild(li);
     });
   });

@@ -342,11 +342,12 @@ header h1 {
 .modal {
   background: white;
   border-radius: 10px;
-  width: 440px;
-  max-width: 95vw;
+  width: 700px;
+  max-width: 96vw;
   box-shadow: 0 8px 30px rgba(0,0,0,0.25);
   overflow: hidden;
 }
+
 
 .modal-header {
   display: flex;
@@ -379,6 +380,8 @@ header h1 {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 75vh;
+  overflow-y: auto;
 }
 
 .col-seccion h3 {
@@ -399,8 +402,9 @@ header h1 {
 
 .col-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
   padding: 6px 10px;
   background: #f7fafc;
   border-radius: 5px;
@@ -638,6 +642,122 @@ tbody td {
   background: #e2e8f0;
   border: none;
   padding: 0;
+}
+
+/* ── Botón ver historial ── */
+.fila-historial td {
+  padding: 8px 14px;
+  background: #f7fafc;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.btn-ver-historial {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  background: transparent;
+  color: #3182ce;
+  border: 1px solid #bee3f8;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ver-historial:hover {
+  background: #ebf8ff;
+  border-color: #3182ce;
+}
+
+.btn-ver-historial.btn-colapsar {
+  color: #718096;
+  border-color: #cbd5e0;
+}
+
+.btn-ver-historial.btn-colapsar:hover {
+  background: #edf2f7;
+  border-color: #718096;
+}
+
+/* ── Badges en header de columna ── */
+.th-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.th-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.th-badge-dia {
+  background: rgba(99, 179, 237, 0.18);
+  color: #bee3f8;
+  border: 1px solid rgba(99, 179, 237, 0.3);
+}
+
+.th-badge-cuota {
+  background: rgba(72, 187, 120, 0.18);
+  color: #9ae6b4;
+  border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+
+
+.col-item-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.col-item-label span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #a0aec0;
+}
+
+/* ── Input meta (día / cuota) en modal ── */
+.input-meta {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  text-align: center;
+  color: #2d3748;
+  background: #f7fafc;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.input-meta:focus {
+  border-color: #3182ce;
+  background: white;
+}
+
+.input-meta::placeholder { color: #cbd5e0; }
+
+.input-meta-cuota {
+  width: 110px;
+  text-align: right;
 }
 
 /* ── Hamburguesa (solo móvil) ── */
