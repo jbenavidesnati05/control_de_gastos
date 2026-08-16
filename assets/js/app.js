@@ -650,6 +650,7 @@ function guardarCambiosModal() {
   guardar();
   renderHeader();
   rerenderTabla();
+  if (window.actualizarNotificaciones) actualizarNotificaciones();
   cerrarModal(true);
 }
 
@@ -777,6 +778,7 @@ async function agregarColumna() {
   renderHeader();
   rerenderTabla();
   renderListaColumnas();
+  if (window.actualizarNotificaciones) actualizarNotificaciones();
   document.getElementById('nueva-nombre').value = '';
 }
 
@@ -799,6 +801,7 @@ async function eliminarColumna(id, nombre) {
   renderHeader();
   rerenderTabla();
   renderListaColumnas();
+  if (window.actualizarNotificaciones) actualizarNotificaciones();
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -813,6 +816,7 @@ async function initApp(uid) {
   renderHeader();
   rerenderTabla();
   initAnalisis();
+  if (window.actualizarNotificaciones) actualizarNotificaciones();
 
   // Eventos — solo se registran una vez
   if (!window._eventosRegistrados) {

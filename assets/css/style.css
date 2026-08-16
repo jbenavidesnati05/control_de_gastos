@@ -326,6 +326,130 @@ header h1 {
   border-color: #c05621;
 }
 
+/* ── Notificaciones de pago ── */
+.notif-wrap {
+  position: relative;
+}
+
+.btn-notif {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #e53e3e;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border: 2px solid #1a202c;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  max-width: 90vw;
+  max-height: 380px;
+  overflow-y: auto;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  z-index: 90;
+  color: #e2e8f0;
+}
+
+.notif-panel-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid #4a5568;
+}
+
+.notif-panel-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.notif-permiso {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #1a202c;
+  border-bottom: 1px solid #4a5568;
+  font-size: 12px;
+  color: #a0aec0;
+}
+
+.btn-activar-notif {
+  align-self: flex-start;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.notif-lista {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #374151;
+}
+
+.notif-item:last-child { border-bottom: none; }
+
+.notif-item-icono {
+  color: #ed8936;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+.notif-item.notif-urgente .notif-item-icono { color: #fc8181; }
+
+.notif-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notif-item-nombre {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notif-item-detalle {
+  font-size: 12px;
+  color: #a0aec0;
+}
+
+.notif-item.notif-urgente .notif-item-detalle { color: #fc8181; }
+
+.notif-vacio {
+  padding: 16px 14px;
+  font-size: 12px;
+  color: #a0aec0;
+  text-align: center;
+  margin: 0;
+}
+
 /* ── Modal ── */
 .modal-overlay {
   position: fixed;

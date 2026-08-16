@@ -64,6 +64,23 @@
           <span id="usuario-nombre"></span>
         </div>
         <span id="btn-guardado" class="btn-guardado">✓ Guardado</span>
+        <div class="notif-wrap">
+          <button id="btn-notificaciones" class="btn-secondary btn-notif" aria-label="Notificaciones de pagos">
+            <i class="fa-solid fa-bell"></i>
+            <span id="notif-badge" class="notif-badge hidden">0</span>
+          </button>
+          <div id="notif-panel" class="notif-panel hidden">
+            <div class="notif-panel-header">
+              <h3>Próximos pagos</h3>
+            </div>
+            <div id="notif-permiso" class="notif-permiso hidden">
+              <span>Activa las notificaciones del navegador para no olvidar tus fechas de corte.</span>
+              <button id="btn-activar-notif" class="btn-primary btn-activar-notif">Activar</button>
+            </div>
+            <ul id="notif-lista" class="notif-lista"></ul>
+            <p id="notif-vacio" class="notif-vacio hidden">No tienes pagos próximos por vencer.</p>
+          </div>
+        </div>
         <button id="btn-columnas" class="btn-secondary">⚙ Mis Cuentas</button>
         <button id="btn-nuevo-periodo" class="btn-primary">+ Nuevo Período</button>
         <button id="btn-limpiar" class="btn-danger">Reiniciar</button>
@@ -177,6 +194,7 @@
   <script src="assets/js/firebase.js"></script>
   <script src="assets/js/dialogs.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/notificaciones.js"></script>
   <script src="assets/js/analisis.js"></script>
   <script src="assets/js/auth.js"></script>
 
