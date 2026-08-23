@@ -1,5 +1,7 @@
-let _chartEvolucion = null;
-let _chartRanking   = null;
+let _chartEvolucion  = null;
+let _chartRanking    = null;
+let _chartGastosTC   = null;
+let _chartPagos      = null;
 
 // ── Vista toggle ─────────────────────────────────────────────────────────────
 
@@ -39,6 +41,77 @@ function getDatosPeriodos() {
     }));
 }
 
+// Paleta de colores para diferenciar cuentas individuales en las gráficas mensuales
+const PALETA_CUENTAS = ['#d69e2e', '#3182ce', '#e53e3e', '#38a169', '#805ad5', '#dd6b20', '#00b5d8', '#d53f8c', '#718096', '#ecc94b'];
+const colorCuenta = idx => PALETA_CUENTAS[idx % PALETA_CUENTAS.length];
+
+function _nombreMes(anio, mesIndex) {
+  const txt = new Date(anio, mesIndex, 1).toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
+// Agrupa los gastos de cada tarjeta TC por mes calendario (getGastos = gasto real,
+// compras nuevas). Solo períodos cerrados y no iniciales — si hubo más de un cierre
+// en el mismo mes, se suman. Tarjetas sin ningún movimiento se excluyen del resultado.
+// Las tarjetas quedan ordenadas de mayor a menor gasto total para comparar cuál se usa más.
+function getGastosMensualesPorTarjeta() {
+  const cuentas = state.tarjetas.filter(t => t.tipo === 'TC');
+  const buckets = new Map(); // "YYYY-MM" -> { anio, mes, valores: { tarjetaId: monto } }
+
+  state.periodos.forEach((p, idx) => {
+    if (!p.cerrado || p.esInicial) return;
+    const [, mm, yyyy] = p.fecha.split('/').map(Number);
+    const clave = `${yyyy}-${String(mm).padStart(2, '0')}`;
+    if (!buckets.has(clave)) buckets.set(clave, { anio: yyyy, mes: mm - 1, valores: {} });
+    const valores = buckets.get(clave).valores;
+    cuentas.forEach(t => { valores[t.id] = (valores[t.id] || 0) + getGastos(idx, t.id); });
+  });
+
+  const claves = [...buckets.keys()].sort();
+  const labels = claves.map(k => _nombreMes(buckets.get(k).anio, buckets.get(k).mes));
+
+  const datasets = cuentas
+    .map(t => ({
+      nombre: t.nombre,
+      data:   claves.map(k => buckets.get(k).valores[t.id] || 0),
+    }))
+    .filter(ds => ds.data.some(v => v !== 0))
+    .sort((a, b) => (b.data.reduce((s, v) => s + v, 0)) - (a.data.reduce((s, v) => s + v, 0)))
+    .map((ds, i) => ({
+      label: ds.nombre,
+      data: ds.data,
+      backgroundColor: colorCuenta(i),
+      borderRadius: 4,
+    }));
+
+  return { labels, datasets };
+}
+
+// Agrupa los pagos (campo "pagos", ingresado directamente por el usuario) de TODAS las
+// cuentas por mes calendario y tipo (TC/CR/OD) — a diferencia de gastos/interés, un pago
+// es un valor real que ya se entregó, sin ambigüedad sobre qué representa.
+function getPagosMensuales() {
+  const buckets = new Map(); // "YYYY-MM" -> { anio, mes, TC, CR, OD }
+
+  state.periodos.forEach((p, idx) => {
+    if (!p.cerrado || p.esInicial) return;
+    const [, mm, yyyy] = p.fecha.split('/').map(Number);
+    const clave = `${yyyy}-${String(mm).padStart(2, '0')}`;
+    if (!buckets.has(clave)) buckets.set(clave, { anio: yyyy, mes: mm - 1, TC: 0, CR: 0, OD: 0 });
+    const bucket = buckets.get(clave);
+    state.tarjetas.forEach(t => { bucket[t.tipo] += p.tarjetas[t.id]?.pagos || 0; });
+  });
+
+  const claves = [...buckets.keys()].sort();
+  const labels = claves.map(k => _nombreMes(buckets.get(k).anio, buckets.get(k).mes));
+  const tc = claves.map(k => buckets.get(k).TC);
+  const cr = claves.map(k => buckets.get(k).CR);
+  const od = claves.map(k => buckets.get(k).OD);
+  const total = tc.map((v, i) => v + cr[i] + od[i]);
+
+  return { labels, tc, cr, od, total };
+}
+
 // ── Render principal ─────────────────────────────────────────────────────────
 
 function renderAnalisis() {
@@ -53,6 +126,10 @@ function renderAnalisis() {
       '<p class="chart-empty">Sin historial disponible.</p>';
     document.getElementById('chart-ranking').closest('.chart-canvas-wrap').innerHTML =
       '<p class="chart-empty">Sin historial disponible.</p>';
+    document.getElementById('chart-gastos-tc').closest('.chart-canvas-wrap').innerHTML =
+      '<p class="chart-empty">Sin historial disponible.</p>';
+    document.getElementById('chart-pagos').closest('.chart-canvas-wrap').innerHTML =
+      '<p class="chart-empty">Sin historial disponible.</p>';
     document.getElementById('tabla-variacion').innerHTML = '';
     return;
   }
@@ -60,6 +137,8 @@ function renderAnalisis() {
   renderResumenCards();
   renderChartEvolucion();
   renderChartRanking();
+  renderChartGastosTC();
+  renderChartPagos();
   renderTablaVariacion();
 }
 
@@ -94,10 +173,10 @@ function renderResumenCards() {
     return { monto, pct };
   }
 
-  const vTC  = varInfo(ultimo.totalTC,  previo?.totalTC  ?? null);
-  const vCR  = varInfo(ultimo.totalCR,  previo?.totalCR  ?? null);
-  const vOD  = varInfo(ultimo.totalOD,  previo?.totalOD  ?? null);
-  const vTot = varInfo(ultimo.total,    previo?.total    ?? null);
+  const vTC   = varInfo(ultimo.totalTC,   previo?.totalTC   ?? null);
+  const vCR   = varInfo(ultimo.totalCR,   previo?.totalCR   ?? null);
+  const vOD   = varInfo(ultimo.totalOD,   previo?.totalOD   ?? null);
+  const vTot  = varInfo(ultimo.total,     previo?.total     ?? null);
 
   document.getElementById('analisis-cards').innerHTML =
     mkCard('tc',  'Tarjetas de Crédito (TC)', ultimo.totalTC,  vTC.monto,  vTC.pct)  +
@@ -233,6 +312,118 @@ function renderChartRanking() {
       },
       scales: {
         x: {
+          ticks: {
+            callback: v => {
+              if (v >= 1_000_000) return '$' + (v / 1_000_000).toFixed(1) + 'M';
+              if (v >= 1_000)     return '$' + (v / 1_000).toFixed(0) + 'K';
+              return '$' + v;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Chart: gastos TC mensuales, desglosado por tarjeta ────────────────────────
+// Un mes en el eje X, una barra por tarjeta dentro de cada mes, ordenadas de
+// mayor a menor gasto total — así se ve de un vistazo cuál tarjeta se usa más.
+function renderChartGastosTC() {
+  const { labels, datasets } = getGastosMensualesPorTarjeta();
+  if (_chartGastosTC) { _chartGastosTC.destroy(); _chartGastosTC = null; }
+
+  if (datasets.length === 0) {
+    document.getElementById('chart-gastos-tc').closest('.chart-canvas-wrap').innerHTML =
+      '<p class="chart-empty">Aún no hay meses con movimientos para graficar.</p>';
+    return;
+  }
+
+  const ctx = document.getElementById('chart-gastos-tc').getContext('2d');
+  _chartGastosTC = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 12, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${formatCOP(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => {
+              if (v >= 1_000_000) return '$' + (v / 1_000_000).toFixed(1) + 'M';
+              if (v >= 1_000)     return '$' + (v / 1_000).toFixed(0) + 'K';
+              return '$' + v;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Chart: pagos mensuales, todos los componentes (TC + CR + OD) ──────────────
+// Cuánto de tu dinero sale cada mes hacia deudas, con el desglose por tipo y
+// una línea de total. A diferencia de gastos/interés, "pagos" es un valor que
+// tú ingresas directamente — no hay ambigüedad sobre qué representa.
+function renderChartPagos() {
+  const { labels, tc, cr, od, total } = getPagosMensuales();
+  if (_chartPagos) { _chartPagos.destroy(); _chartPagos = null; }
+
+  if (labels.length === 0) {
+    document.getElementById('chart-pagos').closest('.chart-canvas-wrap').innerHTML =
+      '<p class="chart-empty">Aún no hay meses con pagos registrados.</p>';
+    return;
+  }
+
+  const ctx = document.getElementById('chart-pagos').getContext('2d');
+  _chartPagos = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: 'TC', data: tc, backgroundColor: '#d69e2e', stack: 'pagos', borderRadius: 3 },
+        { type: 'bar', label: 'CR', data: cr, backgroundColor: '#dd6b20', stack: 'pagos', borderRadius: 3 },
+        { type: 'bar', label: 'OD', data: od, backgroundColor: '#38a169', stack: 'pagos', borderRadius: 3 },
+        {
+          type: 'line',
+          label: 'Total',
+          data: total,
+          borderColor: '#e53e3e',
+          backgroundColor: 'rgba(229,62,62,0.05)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: false,
+          pointRadius: 5,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 16 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${formatCOP(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true },
+        y: {
+          stacked: true,
           ticks: {
             callback: v => {
               if (v >= 1_000_000) return '$' + (v / 1_000_000).toFixed(1) + 'M';
