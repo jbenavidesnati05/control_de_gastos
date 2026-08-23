@@ -1192,10 +1192,10 @@ tbody td {
   border-radius: 10px 10px 0 0;
 }
 
-.rc-acento-tc  .rc-acento-bar { background: #d69e2e; }
-.rc-acento-cr  .rc-acento-bar { background: #dd6b20; }
-.rc-acento-od  .rc-acento-bar { background: #38a169; }
-.rc-acento-gen .rc-acento-bar { background: #e53e3e; }
+.rc-acento-tc  .rc-acento-bar { background: #118DFF; }
+.rc-acento-cr  .rc-acento-bar { background: #E66C37; }
+.rc-acento-od  .rc-acento-bar { background: #744EC2; }
+.rc-acento-gen .rc-acento-bar { background: #12239E; }
 
 /* ── Grid de gráficas ── */
 .analisis-charts-grid {
@@ -1279,9 +1279,23 @@ tbody td {
   letter-spacing: 0.3px;
   margin-right: 4px;
 }
-.badge-tc  { background: #fefcbf; color: #744210; }
-.badge-cr  { background: #feebc8; color: #7b341e; }
-.badge-od  { background: #c6f6d5; color: #22543d; }
+.badge-tc  { background: #dceeff; color: #0b5fa8; }
+.badge-cr  { background: #fce4d6; color: #a64b1f; }
+.badge-od  { background: #ede3f7; color: #4a2e82; }
+
+.chart-tabla-aux {
+  overflow-x: auto;
+  margin-top: 14px;
+}
+
+.chart-tabla-aux .tabla-variacion { min-width: 480px; }
+
+.tabla-variacion tfoot .tr-total td {
+  background: #edf2f7;
+  color: #1a202c;
+  font-weight: 700;
+  border-top: 2px solid #cbd5e0;
+}
 
 /* ── Responsive análisis ── */
 @media (max-width: 900px) {

@@ -41,8 +41,10 @@ function getDatosPeriodos() {
     }));
 }
 
-// Paleta de colores para diferenciar cuentas individuales en las gráficas mensuales
-const PALETA_CUENTAS = ['#d69e2e', '#3182ce', '#e53e3e', '#38a169', '#805ad5', '#dd6b20', '#00b5d8', '#d53f8c', '#718096', '#ecc94b'];
+// Paleta categórica de Power BI (tema por defecto) para diferenciar cuentas
+// individuales en las gráficas mensuales — tonos distintos entre sí para que
+// cada cuenta se distinga de un vistazo, no una variación del mismo color.
+const PALETA_CUENTAS = ['#118DFF', '#12239E', '#E66C37', '#6B007B', '#E044A7', '#744EC2', '#D9B300', '#D64550', '#01B8AA', '#374649'];
 const colorCuenta = idx => PALETA_CUENTAS[idx % PALETA_CUENTAS.length];
 
 function _nombreMes(anio, mesIndex) {
@@ -130,6 +132,8 @@ function renderAnalisis() {
       '<p class="chart-empty">Sin historial disponible.</p>';
     document.getElementById('chart-pagos').closest('.chart-canvas-wrap').innerHTML =
       '<p class="chart-empty">Sin historial disponible.</p>';
+    document.getElementById('tabla-gastos-tc').innerHTML = '';
+    document.getElementById('tabla-pagos').innerHTML = '';
     document.getElementById('tabla-variacion').innerHTML = '';
     return;
   }
@@ -138,7 +142,9 @@ function renderAnalisis() {
   renderChartEvolucion();
   renderChartRanking();
   renderChartGastosTC();
+  renderTablaGastosTC();
   renderChartPagos();
+  renderTablaPagos();
   renderTablaVariacion();
 }
 
@@ -202,8 +208,8 @@ function renderChartEvolucion() {
         {
           label: 'TC',
           data: datos.map(d => d.totalTC),
-          borderColor: '#d69e2e',
-          backgroundColor: 'rgba(214,158,46,0.12)',
+          borderColor: '#118DFF',
+          backgroundColor: 'rgba(17,141,255,0.12)',
           tension: 0.35,
           fill: true,
           pointRadius: 4,
@@ -211,8 +217,8 @@ function renderChartEvolucion() {
         {
           label: 'CR',
           data: datos.map(d => d.totalCR),
-          borderColor: '#dd6b20',
-          backgroundColor: 'rgba(221,107,32,0.12)',
+          borderColor: '#E66C37',
+          backgroundColor: 'rgba(230,108,55,0.12)',
           tension: 0.35,
           fill: true,
           pointRadius: 4,
@@ -220,8 +226,8 @@ function renderChartEvolucion() {
         {
           label: 'OD',
           data: datos.map(d => d.totalOD),
-          borderColor: '#38a169',
-          backgroundColor: 'rgba(56,161,105,0.12)',
+          borderColor: '#744EC2',
+          backgroundColor: 'rgba(116,78,194,0.12)',
           tension: 0.35,
           fill: true,
           pointRadius: 4,
@@ -229,8 +235,8 @@ function renderChartEvolucion() {
         {
           label: 'Total',
           data: datos.map(d => d.total),
-          borderColor: '#e53e3e',
-          backgroundColor: 'rgba(229,62,62,0.05)',
+          borderColor: '#12239E',
+          backgroundColor: 'rgba(18,35,158,0.06)',
           borderWidth: 2.5,
           tension: 0.35,
           fill: false,
@@ -284,7 +290,7 @@ function renderChartRanking() {
     return;
   }
 
-  const colorMap = { TC: '#d69e2e', CR: '#dd6b20', OD: '#38a169' };
+  const colorMap = { TC: '#118DFF', CR: '#E66C37', OD: '#744EC2' };
 
   const ctx = document.getElementById('chart-ranking').getContext('2d');
   _chartRanking = new Chart(ctx, {
@@ -325,9 +331,9 @@ function renderChartRanking() {
   });
 }
 
-// ── Chart: gastos TC mensuales, desglosado por tarjeta ────────────────────────
-// Un mes en el eje X, una barra por tarjeta dentro de cada mes, ordenadas de
-// mayor a menor gasto total — así se ve de un vistazo cuál tarjeta se usa más.
+// ── Chart: gastos TC mensuales, apilado por tarjeta + línea de Total ──────────
+// Un mes en el eje X, barras apiladas por tarjeta (ordenadas de mayor a menor
+// gasto total) y una línea roja con el total del mes — igual estilo que Pagos.
 function renderChartGastosTC() {
   const { labels, datasets } = getGastosMensualesPorTarjeta();
   if (_chartGastosTC) { _chartGastosTC.destroy(); _chartGastosTC = null; }
@@ -338,10 +344,27 @@ function renderChartGastosTC() {
     return;
   }
 
+  const total = labels.map((_, i) => datasets.reduce((sum, ds) => sum + ds.data[i], 0));
+
   const ctx = document.getElementById('chart-gastos-tc').getContext('2d');
   _chartGastosTC = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets },
+    data: {
+      labels,
+      datasets: [
+        ...datasets.map(ds => ({ ...ds, type: 'bar', stack: 'gastos' })),
+        {
+          type: 'line',
+          label: 'Total',
+          data: total,
+          borderColor: '#1A202C',
+          backgroundColor: 'rgba(26,32,44,0.06)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: false,
+          pointRadius: 5,
+        },
+      ]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -357,7 +380,9 @@ function renderChartGastosTC() {
         }
       },
       scales: {
+        x: { stacked: true },
         y: {
+          stacked: true,
           ticks: {
             callback: v => {
               if (v >= 1_000_000) return '$' + (v / 1_000_000).toFixed(1) + 'M';
@@ -369,6 +394,48 @@ function renderChartGastosTC() {
       }
     }
   });
+}
+
+// Tabla auxiliar tarjeta × mes con columna Total (por tarjeta) y fila Total mes
+// (todas las tarjetas sumadas) — más precisa que la gráfica para comparar montos
+// parecidos. Las filas ya vienen ordenadas de mayor a menor gasto total.
+function renderTablaGastosTC() {
+  const tabla = document.getElementById('tabla-gastos-tc');
+  if (!tabla) return;
+
+  const { labels, datasets } = getGastosMensualesPorTarjeta();
+
+  if (datasets.length === 0) {
+    tabla.innerHTML = '';
+    return;
+  }
+
+  const totalesMes = labels.map((_, i) => datasets.reduce((sum, ds) => sum + ds.data[i], 0));
+  const granTotal   = totalesMes.reduce((a, b) => a + b, 0);
+
+  tabla.innerHTML = `
+    <thead>
+      <tr>
+        <th>Tarjeta</th>
+        ${labels.map(l => `<th class="td-r">${l}</th>`).join('')}
+        <th class="td-r">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${datasets.map(ds => `
+        <tr>
+          <td class="fw">${ds.label}</td>
+          ${ds.data.map(v => `<td class="td-r">${v ? formatCOP(v) : '—'}</td>`).join('')}
+          <td class="td-r fw">${formatCOP(ds.data.reduce((a, b) => a + b, 0))}</td>
+        </tr>`).join('')}
+    </tbody>
+    <tfoot>
+      <tr class="tr-total">
+        <td>Total mes</td>
+        ${totalesMes.map(v => `<td class="td-r">${formatCOP(v)}</td>`).join('')}
+        <td class="td-r">${formatCOP(granTotal)}</td>
+      </tr>
+    </tfoot>`;
 }
 
 // ── Chart: pagos mensuales, todos los componentes (TC + CR + OD) ──────────────
@@ -390,15 +457,15 @@ function renderChartPagos() {
     data: {
       labels,
       datasets: [
-        { type: 'bar', label: 'TC', data: tc, backgroundColor: '#d69e2e', stack: 'pagos', borderRadius: 3 },
-        { type: 'bar', label: 'CR', data: cr, backgroundColor: '#dd6b20', stack: 'pagos', borderRadius: 3 },
-        { type: 'bar', label: 'OD', data: od, backgroundColor: '#38a169', stack: 'pagos', borderRadius: 3 },
+        { type: 'bar', label: 'TC', data: tc, backgroundColor: '#118DFF', stack: 'pagos', borderRadius: 3 },
+        { type: 'bar', label: 'CR', data: cr, backgroundColor: '#E66C37', stack: 'pagos', borderRadius: 3 },
+        { type: 'bar', label: 'OD', data: od, backgroundColor: '#744EC2', stack: 'pagos', borderRadius: 3 },
         {
           type: 'line',
           label: 'Total',
           data: total,
-          borderColor: '#e53e3e',
-          backgroundColor: 'rgba(229,62,62,0.05)',
+          borderColor: '#12239E',
+          backgroundColor: 'rgba(18,35,158,0.06)',
           borderWidth: 2.5,
           tension: 0.35,
           fill: false,
@@ -435,6 +502,52 @@ function renderChartPagos() {
       }
     }
   });
+}
+
+// Tabla auxiliar tipo × mes (TC/CR/OD) con columna Total (por tipo) y fila
+// Total mes (los tres tipos sumados) — el mismo valor que la línea roja del chart.
+function renderTablaPagos() {
+  const tabla = document.getElementById('tabla-pagos');
+  if (!tabla) return;
+
+  const { labels, tc, cr, od, total } = getPagosMensuales();
+
+  if (labels.length === 0) {
+    tabla.innerHTML = '';
+    return;
+  }
+
+  const filas = [
+    { nombre: 'TC', valores: tc },
+    { nombre: 'CR', valores: cr },
+    { nombre: 'OD', valores: od },
+  ].filter(f => f.valores.some(v => v !== 0));
+
+  const granTotal = total.reduce((a, b) => a + b, 0);
+
+  tabla.innerHTML = `
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        ${labels.map(l => `<th class="td-r">${l}</th>`).join('')}
+        <th class="td-r">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filas.map(f => `
+        <tr>
+          <td class="fw">${f.nombre}</td>
+          ${f.valores.map(v => `<td class="td-r">${v ? formatCOP(v) : '—'}</td>`).join('')}
+          <td class="td-r fw">${formatCOP(f.valores.reduce((a, b) => a + b, 0))}</td>
+        </tr>`).join('')}
+    </tbody>
+    <tfoot>
+      <tr class="tr-total">
+        <td>Total mes</td>
+        ${total.map(v => `<td class="td-r">${formatCOP(v)}</td>`).join('')}
+        <td class="td-r">${formatCOP(granTotal)}</td>
+      </tr>
+    </tfoot>`;
 }
 
 // ── Tabla de variación ───────────────────────────────────────────────────────
